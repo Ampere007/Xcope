@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ป<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,10 +9,13 @@
     .Vignette { position:fixed; z-index:2; left:-13vw; top:-20vh; width:130vw; }
     .Smear    { position:fixed; z-index:1; width:50vw; left:15vw; top:10vw; opacity:0; transition:opacity 1s ease; }
 
-    /* กรอบสี่เหลี่ยมครอป (ให้ตัด "เท่ากรอบนี้") */
+    /* ⬇️ ลดขนาดกรอบสี่เหลี่ยมลง */
     #crop {
       position:fixed; z-index:3;
-      left:22vw; top:12vw; width:26vw; height:26vw;
+      left:25vw;         /* เดิม 22vw */
+      top:14vw;          /* เดิม 12vw */
+      width:22vw;        /* เดิม 26vw */
+      height:22vw;       /* เดิม 26vw */
       border:3px dashed #00e5ff;
       box-shadow:0 0 0 9999px rgba(0,0,0,0.35);
       pointer-events:none;
@@ -23,12 +26,11 @@
       font-family:"Prompt", system-ui, sans-serif; font-weight:bold;
       border-radius:1vw; border:none; right:12vh; font-size:2vw;
       padding:1.2vh 3vh; cursor:pointer; display:flex; align-items:center; gap:1.2vh;
+      bottom:9vh; /* ปุ่มเดียว วางต่ำอันเดียว */
     }
     .cap-btn:hover { background:#c06c12; }
     .cap-btn:active{ background:#f58a18; }
     .cap-btn img   { filter:invert(1); width:6vh; }
-    #btnThick { bottom:18vh; }
-    #btnThin  { bottom:9vh;  }
   </style>
 </head>
 <body>
@@ -36,12 +38,9 @@
   <img class="Smear" src="" />
   <div id="crop"></div>
 
-  <button id="btnThick" class="cap-btn" type="button">
-    Capture Thick
-    <img src="https://cdn-icons-png.flaticon.com/512/45/45010.png" alt="">
-  </button>
-  <button id="btnThin" class="cap-btn" type="button">
-    Capture Thin
+  <!-- ปุ่ม Capture เดียว -->
+  <button id="btnCapture" class="cap-btn" type="button">
+    Capture
     <img src="https://cdn-icons-png.flaticon.com/512/45/45010.png" alt="">
   </button>
 
@@ -54,7 +53,7 @@
     const smear   = document.querySelector('.Smear');
     const cropBox = document.getElementById('crop');
 
-    // รับพารามิเตอร์ ?slot=thick|thin (ถ้าอยากผูก hotkey C ให้คีย์ไปช่องนั้น)
+    // รับพารามิเตอร์ ?slot=thick|thin เพื่อบอกให้ส่งกลับช่องไหน
     const params = new URLSearchParams(location.search);
     const defaultSlot = params.get('slot'); // 'thick' | 'thin' | null
 
@@ -66,7 +65,7 @@
       keysPressed[event.key] = true;
       if (event.key.toLowerCase() === 'a') smear.style.opacity = 0.8; // โชว์สไลด์
       if (event.key.toLowerCase() === 's') smear.style.opacity = 0;   // ซ่อนสไลด์
-      if (event.key.toLowerCase() === 'c') captureAndSend(defaultSlot || 'thick'); // hotkey แคปเร็ว
+      if (event.key.toLowerCase() === 'c') captureAndSend(defaultSlot || 'thick'); // hotkey แคป
     });
     document.addEventListener('keyup', (event) => { keysPressed[event.key] = false; });
 
@@ -133,7 +132,6 @@
         const dataUrl = await cropSmearToDataURL();
         // ส่งกลับไปหน้า Upload
         if (window.opener) {
-          // ใช้ origin ของหน้า Upload ที่กำหนดไว้เพื่อความปลอดภัย
           window.opener.postMessage(
             { type: "xcope_capture", target, dataUrl },
             UPLOAD_ALLOWED_ORIGIN
@@ -146,8 +144,9 @@
       }
     }
 
-    document.getElementById("btnThick").addEventListener("click", () => captureAndSend("thick"));
-    document.getElementById("btnThin").addEventListener("click",  () => captureAndSend("thin"));
+    document.getElementById("btnCapture").addEventListener("click", () => {
+      captureAndSend(defaultSlot || "thick"); // ใช้ค่า slot ส่งกลับ
+    });
   </script>
 </body>
 </html>
