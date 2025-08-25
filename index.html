@@ -1,108 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XcopeView</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XcopeView</title>
+  <style>
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#000; }
+    .Vignette { position:fixed; z-index:2; left:-13vw; top:-20vh; width:130vw; }
+    .Smear    { position:fixed; z-index:1; width:50vw; left:15vw; top:10vw; opacity:0; transition:opacity 1s ease; }
+
+    /* กรอบสี่เหลี่ยมครอป (ให้ตัด "เท่ากรอบนี้") */
+    #crop {
+      position:fixed; z-index:3;
+      left:22vw; top:12vw; width:26vw; height:26vw;
+      border:3px dashed #00e5ff;
+      box-shadow:0 0 0 9999px rgba(0,0,0,0.35);
+      pointer-events:none;
+    }
+
+    .cap-btn {
+      position:fixed; z-index:4; background:#f58a18; color:#fff;
+      font-family:"Prompt", system-ui, sans-serif; font-weight:bold;
+      border-radius:1vw; border:none; right:12vh; font-size:2vw;
+      padding:1.2vh 3vh; cursor:pointer; display:flex; align-items:center; gap:1.2vh;
+    }
+    .cap-btn:hover { background:#c06c12; }
+    .cap-btn:active{ background:#f58a18; }
+    .cap-btn img   { filter:invert(1); width:6vh; }
+    #btnThick { bottom:18vh; }
+    #btnThin  { bottom:9vh;  }
+  </style>
 </head>
 <body>
-    <img class="Vignette" src="XcopeWebSite.svg" draggable="false">
-    <img class="Smear" src="">
-    <button>
-        CaptureImage
-        <br><img src="https://cdn-icons-png.flaticon.com/512/45/45010.png">
-    </button>
-</body>
-</html>
-<style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-    }
-    .Vignette {
-        position: fixed;
-        top: -20vh;
-        width: 130vw;
-        z-index: 2;
-        left: -13vw;
-        top: -20vh;
-    }
-    .Smear {
-        position: fixed;
-        z-index: 1;
-        width: 50vw;
-        left: 15vw;
-        top: 10vw;
-        opacity: 0; 
-        transition: opacity 1s ease; 
-    }
-    button{
-        position: fixed;
-        z-index: 3;
-        background-color: #f58a18;
-        font-family: "Prompt";
-        font-weight: bold;
-        border-radius: 1vw;
-        border: none;
-        right: 12vh;
-        bottom: 10vh;
-        font-size: 2vw;
-        color: white;
-    }
-    button:hover{
-        background-color: #c06c12;
-    }
-    button:active{
-        background-color: #f58a18;
-    }
-    button img{
-        filter: invert(1);
-        width: 20vh;
-        padding-right: 6vw;
-        padding-left: 6vw;
-    }
-</style>
+  <img class="Vignette" src="XcopeWebSite.svg" draggable="false" />
+  <img class="Smear" src="" />
+  <div id="crop"></div>
 
-<script>
-    const smear = document.querySelector('.Smear');
+  <button id="btnThick" class="cap-btn" type="button">
+    Capture Thick
+    <img src="https://cdn-icons-png.flaticon.com/512/45/45010.png" alt="">
+  </button>
+  <button id="btnThin" class="cap-btn" type="button">
+    Capture Thin
+    <img src="https://cdn-icons-png.flaticon.com/512/45/45010.png" alt="">
+  </button>
 
-    let posX = 0;
-    let posY = 0;
+  <script>
+    /* ===== CONFIG =====
+       origin ของหน้า Upload (จะใช้ยืนยันปลายทาง + ส่งข้อความกลับไปที่ origin นี้) */
+    // ถ้ารัน dev ที่ Vite: "http://localhost:5173" หรือ "http://127.0.0.1:5173"
+    const UPLOAD_ALLOWED_ORIGIN = "http://localhost:5173";
+
+    const smear   = document.querySelector('.Smear');
+    const cropBox = document.getElementById('crop');
+
+    // รับพารามิเตอร์ ?slot=thick|thin (ถ้าอยากผูก hotkey C ให้คีย์ไปช่องนั้น)
+    const params = new URLSearchParams(location.search);
+    const defaultSlot = params.get('slot'); // 'thick' | 'thin' | null
+
+    let posX = 0, posY = 0;
     const step = 8;
     const keysPressed = {};
 
     document.addEventListener('keydown', (event) => {
-        keysPressed[event.key] = true;
-
-        // ถ้ากด a ให้แสดง Smear
-        if (event.key.toLowerCase() === 'a') {
-            smear.style.opacity = 0.8;
-        }
-        if (event.key.toLowerCase() === 's') {
-            smear.style.opacity = 0;
-        }
+      keysPressed[event.key] = true;
+      if (event.key.toLowerCase() === 'a') smear.style.opacity = 0.8; // โชว์สไลด์
+      if (event.key.toLowerCase() === 's') smear.style.opacity = 0;   // ซ่อนสไลด์
+      if (event.key.toLowerCase() === 'c') captureAndSend(defaultSlot || 'thick'); // hotkey แคปเร็ว
     });
-
-    document.addEventListener('keyup', (event) => {
-        keysPressed[event.key] = false;
-    });
+    document.addEventListener('keyup', (event) => { keysPressed[event.key] = false; });
 
     function update() {
-        if (keysPressed['ArrowUp']) posY += step;
-        if (keysPressed['ArrowDown']) posY -= step;
-        if (keysPressed['ArrowLeft']) posX += step;
-        if (keysPressed['ArrowRight']) posX -= step;
-        if (keysPressed['1']) smear.src = "FalciparumTN.webp",posX = 10, posY = 0;
-        if (keysPressed['2']) smear.src = "FalciparumTK.webp", posX = -50, posY = -70;
-        if (keysPressed['3']) smear.src = "VivaxTN.webp",posX = 10, posY = -0;
-        if (keysPressed['4']) smear.src = "VivaxTK.webp",posX = 100, posY = -90;
+      if (keysPressed['ArrowUp'])    posY += step;
+      if (keysPressed['ArrowDown'])  posY -= step;
+      if (keysPressed['ArrowLeft'])  posX += step;
+      if (keysPressed['ArrowRight']) posX -= step;
 
-        smear.style.transform = `translate(${posX}px, ${posY}px)`;
+      if (keysPressed['1']) { smear.src = "FalciparumTN.webp"; posX = 10;  posY = 0;   }
+      if (keysPressed['2']) { smear.src = "FalciparumTK.webp"; posX = -50; posY = -70; }
+      if (keysPressed['3']) { smear.src = "VivaxTN.webp";      posX = 10;  posY = 0;   }
+      if (keysPressed['4']) { smear.src = "VivaxTK.webp";      posX = 100; posY = -90; }
 
-        requestAnimationFrame(update);
+      smear.style.transform = `translate(${posX}px, ${posY}px)`;
+      requestAnimationFrame(update);
     }
     update();
-</script>
+
+    // ===== ครอป "เท่ากรอบ #crop" จากภาพ Smear แล้วคืนเป็น DataURL =====
+    function cropSmearToDataURL() {
+      return new Promise((resolve, reject) => {
+        if (!smear || !smear.src) return reject(new Error("No smear image"));
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // ใช้ได้ถ้าไฟล์รองรับ CORS (แนะนำเสิร์ฟไฟล์จากโดเมนเดียวกัน)
+        img.onload = () => {
+          const smearRect = smear.getBoundingClientRect();
+          const cropRect  = cropBox.getBoundingClientRect();
+
+          // พิกัดซ้อนทับระหว่างกรอบกับรูปที่ "แสดงบนจอ"
+          const ix = Math.max(cropRect.left,   smearRect.left);
+          const iy = Math.max(cropRect.top,    smearRect.top);
+          const ax = Math.min(cropRect.right,  smearRect.right);
+          const ay = Math.min(cropRect.bottom, smearRect.bottom);
+          const interW = Math.max(0, ax - ix);
+          const interH = Math.max(0, ay - iy);
+          if (interW === 0 || interH === 0) return reject(new Error("Crop is outside image"));
+
+          // แปลงพิกัดจากจอ → พิกเซลจริงของรูป
+          const scaleX = img.naturalWidth  / smearRect.width;
+          const scaleY = img.naturalHeight / smearRect.height;
+
+          const sx = (ix - smearRect.left) * scaleX;
+          const sy = (iy - smearRect.top)  * scaleY;
+          const sw = interW * scaleX;
+          const sh = interH * scaleY;
+
+          // วาดลง canvas ขนาดเท่ากรอบ (จอ)
+          const canvas = document.createElement("canvas");
+          canvas.width  = Math.round(interW);
+          canvas.height = Math.round(interH);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+          resolve(canvas.toDataURL("image/jpeg", 0.92));
+        };
+        img.onerror = reject;
+        img.src = smear.src;
+      });
+    }
+
+    async function captureAndSend(target) {
+      try {
+        const dataUrl = await cropSmearToDataURL();
+        // ส่งกลับไปหน้า Upload
+        if (window.opener) {
+          // ใช้ origin ของหน้า Upload ที่กำหนดไว้เพื่อความปลอดภัย
+          window.opener.postMessage(
+            { type: "xcope_capture", target, dataUrl },
+            UPLOAD_ALLOWED_ORIGIN
+          );
+        }
+        window.close(); // ปิดแท็บตัวเอง
+      } catch (err) {
+        alert("ตัดภาพไม่ได้: ตรวจสอบว่ากรอบทับรูปอยู่ และไฟล์รูปโหลดสำเร็จ");
+        console.error(err);
+      }
+    }
+
+    document.getElementById("btnThick").addEventListener("click", () => captureAndSend("thick"));
+    document.getElementById("btnThin").addEventListener("click",  () => captureAndSend("thin"));
+  </script>
+</body>
+</html>
