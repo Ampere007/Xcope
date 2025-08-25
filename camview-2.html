@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XcopeView</title>
+</head>
+<body>
+    <img class="Vignette" src="XcopeWebSite.svg" draggable="false">
+    <img class="Smear" src="">
+    <button>
+        CaptureImage
+        <br><img src="https://cdn-icons-png.flaticon.com/512/45/45010.png">
+    </button>
+</body>
+</html>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+    }
+    .Vignette {
+        position: fixed;
+        top: -20vh;
+        width: 130vw;
+        z-index: 2;
+        left: -13vw;
+        top: -20vh;
+    }
+    .Smear {
+        position: fixed;
+        z-index: 1;
+        width: 50vw;
+        left: 15vw;
+        top: 10vw;
+        opacity: 0; 
+        transition: opacity 1s ease; 
+    }
+    button{
+        position: fixed;
+        z-index: 3;
+        background-color: #f58a18;
+        font-family: "Prompt";
+        font-weight: bold;
+        border-radius: 1vw;
+        border: none;
+        right: 12vh;
+        bottom: 10vh;
+        font-size: 2vw;
+        color: white;
+    }
+    button:hover{
+        background-color: #c06c12;
+    }
+    button:active{
+        background-color: #f58a18;
+    }
+    button img{
+        filter: invert(1);
+        width: 20vh;
+        padding-right: 6vw;
+        padding-left: 6vw;
+    }
+</style>
+
+<script>
+    const smear = document.querySelector('.Smear');
+
+    let posX = 0;
+    let posY = 0;
+    const step = 8;
+    const keysPressed = {};
+
+    document.addEventListener('keydown', (event) => {
+        keysPressed[event.key] = true;
+
+        // ถ้ากด a ให้แสดง Smear
+        if (event.key.toLowerCase() === 'a') {
+            smear.style.opacity = 0.8;
+        }
+        if (event.key.toLowerCase() === 's') {
+            smear.style.opacity = 0;
+        }
+    });
+
+    document.addEventListener('keyup', (event) => {
+        keysPressed[event.key] = false;
+    });
+
+    function update() {
+        if (keysPressed['ArrowUp']) posY += step;
+        if (keysPressed['ArrowDown']) posY -= step;
+        if (keysPressed['ArrowLeft']) posX += step;
+        if (keysPressed['ArrowRight']) posX -= step;
+        if (keysPressed['1']) smear.src = "FalciparumTN.webp",posX = 10, posY = 0;
+        if (keysPressed['2']) smear.src = "FalciparumTK.webp", posX = -50, posY = -70;
+        if (keysPressed['3']) smear.src = "VivaxTN.webp",posX = 10, posY = -0;
+        if (keysPressed['4']) smear.src = "VivaxTK.webp",posX = 100, posY = -90;
+
+        smear.style.transform = `translate(${posX}px, ${posY}px)`;
+
+        requestAnimationFrame(update);
+    }
+    update();
+</script>
