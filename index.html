@@ -48,7 +48,7 @@
     /* ===== CONFIG =====
        origin ของหน้า Upload (จะใช้ยืนยันปลายทาง + ส่งข้อความกลับไปที่ origin นี้) */
     // ถ้ารัน dev ที่ Vite: "http://localhost:5173" หรือ "http://127.0.0.1:5173"
-    const UPLOAD_ALLOWED_ORIGIN = "https://malaria-x-q7ci.vercel.app/";
+    const UPLOAD_ALLOWED_ORIGIN = "https://www.malariax.health/";
 
     const smear   = document.querySelector('.Smear');
     const cropBox = document.getElementById('crop');
@@ -76,8 +76,8 @@
       if (keysPressed['ArrowRight']) posX -= step;
 
       if (keysPressed['1']) { smear.src = "FalciparumTN.webp"; posX = 10;  posY = 0;   }
-      if (keysPressed['2']) { smear.src = "FalciparumTK.webp"; posX = -50; posY = -70; }
-      if (keysPressed['3']) { smear.src = "VivaxTN.webp";      posX = 10;  posY = 0;   }
+      if (keysPressed['2', '/']) { smear.src = "FalciparumTK.webp"; posX = -50; posY = -70; }
+      if (keysPressed['3' ]) { smear.src = "VivaxTN.webp";      posX = 10;  posY = 0;   }
       if (keysPressed['4']) { smear.src = "VivaxTK.webp";      posX = 100; posY = -90; }
 
       smear.style.transform = `translate(${posX}px, ${posY}px)`;
